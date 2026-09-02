@@ -990,21 +990,35 @@ function renderSubteamBoard(){
   charts.stTotal=new Chart(document.getElementById('stTotalChart'),{type:'bar',data:{labels:top.map(function(x){return x.leader;}),datasets:[{label:'Total Points',data:top.map(function(x){return x.total;}),backgroundColor:'#2e6ea0',borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
 }
 (function(){
-  var sb=document.querySelector('.sidebar');
-  if(sb){var a=false,y0=0,t0=0,mv=false,pid=null;
-    sb.addEventListener('pointerdown',function(e){if(e.pointerType==='touch')return;a=true;mv=false;pid=e.pointerId;y0=e.clientY;t0=sb.scrollTop;try{sb.setPointerCapture(pid);}catch(_){}sb.classList.add('dragging');});
-    sb.addEventListener('pointermove',function(e){if(!a)return;var d=e.clientY-y0;if(Math.abs(d)>3)mv=true;sb.scrollTop=t0-d;});
-    function end(){a=false;sb.classList.remove('dragging');if(pid!=null){try{sb.releasePointerCapture(pid);}catch(_){}pid=null;}}
-    sb.addEventListener('pointerup',end);sb.addEventListener('pointercancel',end);
-    sb.addEventListener('click',function(e){if(mv){e.preventDefault();e.stopPropagation();mv=false;}},true);
+  function addDrag(el,axis){
+    if(!el)return;
+    var down=false,moved=false,start=0,orig=0;
+    el.addEventListener('pointerdown',function(e){
+      if(e.pointerType==='touch')return;
+      down=true;moved=false;
+      start=axis==='x'?e.clientX:e.clientY;
+      orig=axis==='x'?el.scrollLeft:el.scrollTop;
+    });
+    window.addEventListener('pointermove',function(e){
+      if(!down)return;
+      var delta=(axis==='x'?e.clientX:e.clientY)-start;
+      if(Math.abs(delta)>6)moved=true;
+      if(moved){
+        if(axis==='x')el.scrollLeft=orig-delta;else el.scrollTop=orig-delta;
+        el.classList.add('dragging');
+        if(e.cancelable)e.preventDefault();
+      }
+    },{passive:false});
+    window.addEventListener('pointerup',function(){
+      if(moved){el._suppressClick=true;setTimeout(function(){el._suppressClick=false;},0);}
+      down=false;el.classList.remove('dragging');
+    });
+    el.addEventListener('click',function(e){
+      if(el._suppressClick){e.preventDefault();e.stopPropagation();}
+    },true);
   }
-  var nv=document.querySelector('.nav');
-  if(nv){var b=false,x0=0,l0=0,mv2=false;
-    nv.addEventListener('pointerdown',function(e){if(e.pointerType==='touch')return;b=true;mv2=false;x0=e.clientX;l0=nv.scrollLeft;});
-    document.addEventListener('pointermove',function(e){if(!b)return;var d=e.clientX-x0;if(Math.abs(d)>3)mv2=true;nv.scrollLeft=l0-d;});
-    document.addEventListener('pointerup',function(){b=false;});
-    nv.addEventListener('click',function(e){if(mv2){e.preventDefault();e.stopPropagation();mv2=false;}},true);
-  }
+  addDrag(document.querySelector('.sidebar'),'y');
+  addDrag(document.querySelector('.nav'),'x');
 })();
 init();
 </script>
